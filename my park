@@ -1,0 +1,16 @@
+getgenv().MAGEXTENDER1.5 = false
+if getgenv().MAGEXTENDER1.5 == true then do
+for _,balls in pairs(game.Workspace.Balls:GetChildren()) do
+if balls.Name == "Ball" then
+balls.Size = Vector3.new(1.5,1.5,1.5)
+end
+end
+end
+getgenv().MAGEXTENDER1.6 = false
+if getgenv().MAGEXTENDER1.5 == true then do
+for _,balls in pairs(game.Workspace.Balls:GetChildren()) do
+if balls.Name == "Ball" then
+balls.Size = Vector3.new(1.6,1.6,1.6)
+end
+end
+end
