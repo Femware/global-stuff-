@@ -1,3 +1,7 @@
+game.StarterGui:SetCore("SendNotification", {
+    Title = "FemWare";
+    Text = "<3 LOADED";
+
 if shared.mypark then return end
 shared.mypark = true -- set to false to disable, can be re-executed
 
