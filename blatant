@@ -1,0 +1,113 @@
+if shared.mypark then return end
+shared.mypark = true -- set to false to disable, can be re-executed
+
+--[[
+features:
+- anti ankle break (for reaching)
+- auto power bar (works on every build, includes anti late shot)
+- infinite stamina
+- anti steal slowdown
+--]]
+
+if not shared.mypark then return end
+
+--[[local mt =getrawmetatable(game)
+local nid = mt.__newindex
+setreadonly(mt, false)
+
+mt.__newindex = newcclosure(function(self, key, value)
+   return nid(self, key, value)
+end)--]]
+
+local info = require(game:GetService("ReplicatedStorage").Modules.Settings)
+local power = game:GetService("Players").LocalPlayer.Info.Profile.ShotPower
+local stamina = game:GetService("Players").LocalPlayer.Info.Profile.Stamina
+local plr = game.Players.LocalPlayer
+local input_s = game:GetService("UserInputService")
+local actions = game:GetService("ReplicatedStorage").Events.Player.Actions
+local ball = game:GetService("ReplicatedStorage").Events.Player.Ball
+
+local stamina_c = stamina:GetPropertyChangedSignal("Value"):Connect(function()
+   stamina.Value = tonumber(info.maxStam) * 2 or 9e9
+end)
+
+local inputsRelease = nil
+for _, v in pairs(getgc()) do
+   if typeof(v) == "function" and islclosure(v) and not is_synapse_function(v) then
+       local c = debug.getconstants(v)
+       if table.find(c, "hasBall") and table.find(c, "ControllerPass") and table.find(c, "vectorToObjectSpace") then
+           inputsRelease = v
+           break
+       end
+   end
+end
+
+local actions_f = nil
+
+local wait_o;
+wait_o = hookfunction(getrenv().wait, newcclosure(function(time)
+   if type(time) == 'number' then
+       local caller = getinfo(3)
+       if (type(caller) == 'table' and string.find(caller.source, 'Input')) then
+           if time > 1.1 and time ~= 2 and (actions_f ~= nil and caller.func ~= actions_f) then
+               local c = debug.getconstants(caller.func)
+               local is_shootBall = table.find(c, "Pump") and table.find(c, "FireServer")
+               local is_pass = table.find(c, "Pass") and table.find(c, "Passing")
+               local is_steal = table.find(c, "steal") and table.find(c, "FireServer")
+               local is_rebound = table.find(c, "BlockDetect") and table.find(c, "rebound")
+               
+               if not is_rebound and not is_pass then
+                   if is_steal then
+                       return wait_o()
+                   elseif is_shootBall then
+                       return wait_o(0.5)
+                   else
+                       return wait_o(0.8)
+                   end
+               end
+           end
+       end
+   end
+
+   return wait_o(time)
+end))
+
+local power_c = power:GetPropertyChangedSignal("Value"):Connect(function()
+   local filled_percent = power.Value / info.BallPower
+   
+   if filled_percent >= 0.83 then
+       inputsRelease(Enum.KeyCode.E)
+       inputsRelease(Enum.KeyCode.Space)
+   end
+end)
+
+local ankles_c = 0
+local fall_c = 0
+if not shared.mypark_hk then
+   shared.mypark_hk = true
+   for _, c in pairs(getconnections(actions.OnClientEvent)) do
+       actions_f = c.Function
+       
+       local constants = debug.getconstants(c.Function)
+       ankles_c = table.find(constants, "Ankles")
+       fall_c = table.find(constants, "Fall")
+       
+       debug.setconstant(c.Function, table.find(constants, "Ankles"), "")
+       debug.setconstant(c.Function, table.find(constants, "Fall"), "")
+   end
+end
+
+while shared.mypark do
+   wait()
+end
+
+hookfunction(getrenv().wait, wait_o)
+
+stamina_c:Disconnect()
+power_c:Disconnect()
+
+for _, c in pairs(getconnections(actions.OnClientEvent)) do
+   local constants = debug.getconstants(c.Function)
+   debug.setconstant(c.Function, ankles_c, "Ankles")
+   debug.setconstant(c.Function, fall_c, "Fall")
+end
